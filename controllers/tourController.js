@@ -14,29 +14,45 @@ const Tour = require('./../models/tourModel');
 //   next();
 // };
 
-exports.getAllTours = (req, res) => {
-  console.log(req.requestTime);
-  res.status(200).json({
-    status: 'success',
-    requestedAt: req.requestTime,
-    // results: tours.length,
-    // data: {
-    //   tours: tours,
-    // },
-  });
+exports.getAllTours = async (req, res) => {
+try{
+  const tours = await Tour.find()
+    
+    res.status(200).json({
+      status: 'success',
+      results: tours.length,
+      data: {
+        tours: tours,
+      },
+    });
+
+} catch (err) {
+  res.status(404).json({
+    status: 'failed',
+    message: err
+  })
+}
 };
 
-exports.getTour = (req, res) => {
-  //это надо чтоб переделать из string в число
-  // const id = req.params.id * 1;
-  //find создаст новый массив из элементов где сравнение true
-  // const tour = tours.find((el) => el.id === id);
-  // res.status(200).json({
-  //   status: 'success',
-  //   data: {
-  //     tours: tour,
-  //   },
-  // });
+exports.getTour = async (req, res) => {
+
+try{
+
+  const tour = await Tour.findById(req.params.id)
+  //тоже самое что Tour.findOne({_id: req.params.id})
+  res.status(200).json({
+    status: 'success',
+    data: {
+      tours: tour,
+    },
+  });
+}catch(err){
+  res.status(404).json({
+    status:"failed",
+    message: err
+  })
+}
+
 };
 
 exports.createTour = async (req, res) => {
@@ -58,18 +74,41 @@ exports.createTour = async (req, res) => {
   }
 };
 
-exports.updateTour = (req, res) => {
-  res.status(200).json({
+exports.updateTour = async (req, res) => {
+
+
+try{
+ await Tour.findByIdAndUpdate(req.params.id, req.body, {
+  new: true,
+  runValidators: true,
+} )
+  
+  res.status(204).json({
     status: 'success',
-    data: {
-      tour: '<Updated tour here...>',
-    },
-  });
+    data:null,
+})
+}catch(err){
+  res.status(404).json({
+    status:"failed",
+    message: err
+  })
+}
 };
 
 exports.deleteTour = (req, res) => {
+ try{
+  const tour = await Tour.findAndDelete(req.params.id)
   res.status(204).json({
     status: 'success',
-    data: null,
+    data: {
+      tour},
   });
+ }catch (err){
+  res.status(404).json({
+    status:"failed",
+    message: err
+  })
+ }
+
+
 };
