@@ -16,16 +16,29 @@ const Tour = require('./../models/tourModel');
 
 exports.getAllTours = async (req, res) => {
 try{
+//BUILD QUERY
+//1a) Filtering
+
 const queryObj = {...req.query}
 const excludedFields = [`page`, 'sort', "limit", 'fields']
 //удаляем лишние поля
 excludedFileds.forEach(el => { delete queryObj[el]});
+//1b) advanced filtering
+//{difficulty: 'easy', duration: {$gte:5}}
+//будем менять gte,gt,lte,lt с добавлением $
 
+let queryStr = JSON.stringify(queryObj)
+queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`)   //\b - это значит что ищем ТОЧНОе совпадене. /g -множество раз можем менять. 
 
+let query = Tour.find(JSON.parse(queryObj))//это не данные а только строка запроса данных!
+// 2) Sorting 
+if(req.query.sort){
+query = query.sort(req.query.sort)
 
-  const query = Tour.find(queryObj)
+}
 
   const tours = await query 
+
 
   // const tours = await Tour.find().where('duration').equals(5).where('difficulty').equals('easy')
   
