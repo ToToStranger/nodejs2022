@@ -124,3 +124,88 @@ exports.deleteTour = async (req, res) => {
     });
   }
 };
+exports.getTourStats = async (req,res)=>{
+  try {
+const stats = Tour.aggregate([{
+  $match: {ratingsAverage: {$gte: 4.5}}
+},
+{
+  $group: {
+    _id: {$toUpper: '$difficulty'},// можно прям тут применять изменения
+    numTours: {$sum: 1}, //для того чтобы посчитать количество документов
+    numRatings: {$sum: '$ratingsQuantity'},
+    avgRating: { $avg: '$ratingsAverage'},
+    avgPrice: {$avg: '$price'}, 
+    minPrice: {$min: '$price'},
+    maxPrice: {$max: '$price'},
+  }
+},
+{
+  $sort:{
+    //теперь используем то что уже указано выше!
+    avgPrice: 1 //1 значит по увеличению -1 по уменьшению
+  }
+},
+// {
+//   $match: {_id: {$ne: 'EASY'}} //это уберет лишние результаты!
+// }
+])
+res.status(204).json({
+  status: 'success',
+  data: stats,
+});
+
+  } catch(err){
+    res.status(404).json({
+      status: 'failed',
+      message: err,
+    });
+  }
+}
+
+exports.getMonthlyPlan = async (req,res) => {
+  try{
+const year = req.params.year *1
+const plan = await Tour.aggregate([
+  {
+    $unwind: '$startDates'
+  },
+  {
+    $match: {
+      startDates: {$gte: new Date(`${year}-01-01`), $lte: new Date(`${year}-12-31`), },
+    }
+  },
+  {
+    $group: {
+      _id: {$month: '$startDates'}, //выбираем туры по стартовой дате
+      numTourStarts:{sum:1}, // за каждый тур присваиваем +1 
+      tours: {$push: '$name' }
+    }
+  },
+  {
+    $addFields: { month: '$_id'} // добавляет поле month со значением $_id
+  },
+  {
+    $project: {
+      _id: 0 //не будет показывать это поле! это тоже фильтра
+    }
+  },
+  {
+    $sort: {numTouStarts: -1}
+  },
+  {
+    $limit: 12 // покажет только первые 12 результатов
+  }
+
+])
+res.status(204).json({
+  status: 'success',
+  data: plan,
+});
+  }catch(err){
+    res.status(404).json({
+      status: 'failed',
+      message: err,
+    });  
+  }
+}

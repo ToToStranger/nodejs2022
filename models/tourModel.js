@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const slugify = require('slugify')
 
 const tourSchema = new mongoose.Schema({
   name: {
@@ -7,6 +8,7 @@ const tourSchema = new mongoose.Schema({
     unique: [true, 'name should be uniq'],
     trim: true, //убирает пробелы спереди и сзади
   },
+  slug: String,
   duration: {
     type: Number,
     required: [true, 'A tour must have a duraction'],
@@ -46,7 +48,51 @@ const tourSchema = new mongoose.Schema({
     select: false, //это значит не показывать никогда клиенту. отправляться не будет вообще!
   },
   startDates: [Date],
-});
+  secretTour:{
+    type:Boolean,
+    default: false
+  }
+},
+  {
+    toJSON: {virtuals:true},
+    toObject: {virtuals:true},
+
+  }
+);
+
+tourSchema.virtual('durationWeeks').get(function(){ //function использовал для того чтобы использовать this.
+  return this.duration / 7
+})
+
+//DOCUMENT MIDDLEWARE: runs before .save() and create(). не работает на insertMany()
+tourSchema.pre('save', function(next){
+this.slug = slugify(this.name, {lower: true})
+next()
+})
+
+// tourSchema.pre('save', function(next){
+//   next()
+// })
+
+// tourSchema.post('save', function(doc, next){
+
+//   next()
+// })
+//QUERY MIDDLEWARE  //find -- query
+tourSchema.pre(/^find/, function(next){  //нифигасе! тут 
+  this.find({secretTour: {$ne: true}}) 
+  this.start = Date.now()
+  next()
+})
+// tourSchema.pre('find', function(next){
+//   this.find({secretTour: {$ne: true}}) 
+//   next()
+// })
+tourSchema.post(/^find/, function(docs, next){
+  console.log(`query took ${Date.now()- this.start} milliseconds`);
+  console.log(docs);
+    next()
+})
 
 const Tour = mongoose.model('Tour', tourSchema);
 
