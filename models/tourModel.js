@@ -8,16 +8,16 @@ const tourSchema = new mongoose.Schema({
     trim: true, //убирает пробелы спереди и сзади
   },
   duration: {
-    type:Number,
-    required: [true, 'A tour must have a duraction']
+    type: Number,
+    required: [true, 'A tour must have a duraction'],
   },
   maxGroupSize: {
-    type:Number,
-    required: [true, 'a group must have a group size']
+    type: Number,
+    required: [true, 'a group must have a group size'],
   },
   difficulty: {
-    type:String,
-    required: [true, 'a tour must have difficulty']
+    type: String,
+    required: [true, 'a tour must have difficulty'],
   },
   ratingAverage: { type: Number, default: 4.5 },
   ratingQuantity: { type: Number, default: 0 },
@@ -25,11 +25,11 @@ const tourSchema = new mongoose.Schema({
     type: Number,
     required: [true, 'A tour must have a name'],
   },
-  priceDiscount:Number,
+  priceDiscount: Number,
   summary: {
     type: String,
     trim: true, //убирает пробелы спереди и сзади
-    required: [true, `a tour must have a summary`]
+    required: [true, `a tour must have a summary`],
   },
   description: {
     type: String,
@@ -37,14 +37,15 @@ const tourSchema = new mongoose.Schema({
   },
   imageCover: {
     type: String,
-    required: [true, 'A tour must have a cover image']
+    required: [true, 'A tour must have a cover image'],
   },
   images: [String],
   createdAt: {
     type: Date,
-    default: Date.now()
+    default: Date.now(),
+    select: false, //это значит не показывать никогда клиенту. отправляться не будет вообще!
   },
-  startDates: [Date]
+  startDates: [Date],
 });
 
 const Tour = mongoose.model('Tour', tourSchema);
