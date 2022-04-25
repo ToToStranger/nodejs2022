@@ -1,5 +1,8 @@
 const express = require('express');
 const morgan = require('morgan');
+const AppError = require('./utils/appError')
+const globalErrorHandler = require('./controllers/errorController')
+
 
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
@@ -55,21 +58,11 @@ app.all('*', (req, res, next) => {
   //   status: 'fail',
   //   message: `can't find ${req.originalUrl}`,
   // });
-  const err = new Error(`can't find ${req.originalUrl}`);
-  err.status = 'fail';
-  err.statusCode = 404;
-  next(err); // если мы пихаем чтото в next то это точно ошибка
+
+  next(new AppError(`can't find ${req.originalUrl}`,404)); // если мы пихаем чтото в next то это точно ошибка
 });
 
 //middlewaare функция для ловли ошибок всего приложения
-app.use((err, req, res, next) => {
-  err.statusCode = err.statusCode || 500;
-  err.status = err.status || 'error';
-
-  res.status(err.statusCode).json({
-    status: err.status,
-    message: err.message,
-  });
-});
+app.use(globalErrorHandler);
 
 module.exports = app;
