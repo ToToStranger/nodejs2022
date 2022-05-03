@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const { promisify } = require('util');
 const User = require('./../models/userModel');
 const catchAsync = require('./../utils/catchAsync');
@@ -133,4 +134,33 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   }
 });
 
-exports.resetPassword = (req, res, next) => {};
+exports.resetPassword = async (req, res, next) => {
+  //1) get user based on the token
+  const hashToken = crypto
+    .createHash('sha256')
+    .update(req.params.token)
+    .digest('hex');
+  const user = await User.findOne({
+    passwordResetToken: hashToken,
+    passwordResetExpires: { $gt: Date.now() },
+  }); // просто видимо применяется два правила для фильтрации. первое это токен, второе что дата должна быть больше чем сейчас
+  //2) if token has not expired and there is a user already
+  if (!user) {
+    return next(new AppError('Token is invalid or has expired', 400));
+  } //400 - bad request
+  user.password = req.body.password;
+  user.passwordConfirm = req.body.passwordConfirm;
+  user.passwordResetToken = undefined;
+  user.passwordExpires = undefined;
+  await user.save();
+
+  //3) update changedPasswordAt property of
+
+  //4) Log the use in. Send JWT
+  const token = signToken(user._id);
+
+  res.status(200).json({
+    status: 'success',
+    token, // просто отправляем token и всё. фронтенд должен поймать токен
+  });
+};

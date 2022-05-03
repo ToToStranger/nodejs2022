@@ -66,6 +66,12 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
+userSchema.pre('save', function (next) {
+  if (!this.isModified('password') || this.isNew) return next(); //выходим если пароль изменили и если это новый документ
+  this.passwordChangedAt = Date.now() - 1000; //чтобы не получилось так, что токен создали раньше даты в записи, отнимаем от записи 1 секунду
+  next();
+});
+
 //instance method доступен для всех документов в коллекции
 
 userSchema.methods.correctPassword = async function (
