@@ -11,6 +11,18 @@ const signToken = (id) => {
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
 };
+ 
+const createSendToken = (user, statusCode, res) =>{
+  const token = signToken(user._id);
+
+  res.status(statusCode).json({
+    status: 'success',
+    token, // просто отправляем token и всё. фронтенд должен поймать токен
+    data: {
+      user: user,
+    },
+  });
+}
 
 exports.signup = catchAsync(async (req, res, next) => {
   const newUser = await User.create({
@@ -20,15 +32,17 @@ exports.signup = catchAsync(async (req, res, next) => {
     passwordConfirm: req.body.passwordConfirm,
   });
 
-  const token = signToken(newUser._id);
+createSendToken(newUser, 201, res)
 
-  res.status(201).json({
-    status: 'success',
-    token, // просто отправляем token и всё. фронтенд должен поймать токен
-    data: {
-      user: newUser,
-    },
-  });
+  // const token = signToken(newUser._id);
+
+  // res.status(201).json({
+  //   status: 'success',
+  //   token, // просто отправляем token и всё. фронтенд должен поймать токен
+  //   data: {
+  //     user: newUser,
+  //   },
+  // });
 });
 exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
@@ -45,12 +59,9 @@ exports.login = catchAsync(async (req, res, next) => {
   if (!user || !(await user.correctPassword(password, user.password))) {
     return next(new AppError('incorrect email or password', 401));
   }
-  const token = signToken(user._id);
 
-  res.status(200).json({
-    status: 'success',
-    token,
-  });
+  createSendToken(user, 200, res)
+
 });
 
 exports.protect = catchAsync(async (req, res, next) => {
@@ -157,10 +168,27 @@ exports.resetPassword = async (req, res, next) => {
   //3) update changedPasswordAt property of
 
   //4) Log the use in. Send JWT
-  const token = signToken(user._id);
-
-  res.status(200).json({
-    status: 'success',
-    token, // просто отправляем token и всё. фронтенд должен поймать токен
-  });
+  createSendToken(user, 200, res)
 };
+
+
+exports.updatePassword = catchAsync( async(req,res,next) => {
+  // 1) get user from collection
+// const {email, password} = req.body
+
+  const user = User.findById(req.user.id).select('+password');
+  // 2) check if posted pass is correct
+
+if(!user || !(await user.correctPassword(req.body.passwordCurrent, user.password))){
+  return next(new AppError('You entered wrong password', 401))
+}
+  // 3) if correct, update password and send JWT
+
+user.password = password
+user.passwordConfirm = password
+await user.save()
+//user.findbyandUpdate не будет производить валидвацию паролей, пролетит мимо шифрования и 
+
+createSendToken(user, 200, res)
+
+})
