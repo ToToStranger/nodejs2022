@@ -2,18 +2,26 @@ const express = require('express');
 const morgan = require('morgan');
 const AppError = require('./utils/appError')
 const globalErrorHandler = require('./controllers/errorController')
-
+const rateLimit = require('express-rate-limit')
 
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
 
 const app = express();
 
-// 1) MIDLLEWAIRS
+// 1) GLOBAL MIDLLEWAIRS
 //morgan просто пишет в консоль данные о запросах
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
+//опции для ограничения подключений с одного айпишника
+const limiter = rateLimit({
+  max: 100,
+  windowMs: 60*60*1000,
+  message: 'Too many requests from this IP, please try again later'
+})
+//применится лимитер только на /api маршрут
+app.use('/api',limiter)
 
 //без этой функции не будет доступа к res.body!!!!!! это важно
 app.use(express.json());

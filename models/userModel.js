@@ -49,6 +49,11 @@ const userSchema = new mongoose.Schema(
     passwordChangedAt: Date,
     passwordResetToken: String,
     passwordResetExpires: Date,
+    active: {
+      type: Boolean,
+      default: true,
+      select: false
+    }
   },
   {
     toJSON: { virtuals: true },
@@ -71,6 +76,14 @@ userSchema.pre('save', function (next) {
   this.passwordChangedAt = Date.now() - 1000; //чтобы не получилось так, что токен создали раньше даты в записи, отнимаем от записи 1 секунду
   next();
 });
+
+userSchema.pre(/^find/, function(next){
+//this points to the current query
+this.find({active: {$ne: false}}); //тут надо именно что НЕ false. потому что тогда все элементы без значения active тоже будут показываться
+
+next()
+})
+
 
 //instance method доступен для всех документов в коллекции
 

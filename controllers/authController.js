@@ -14,6 +14,15 @@ const signToken = (id) => {
  
 const createSendToken = (user, statusCode, res) =>{
   const token = signToken(user._id);
+user.password = undefined //это уберет пароль из отправки нам так как запись в БД происходит раньше
+  const cookieOptions = {
+    expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000),
+
+    httpOnly: true // так нельзя вообще никак модифицировать куки Очень важно!
+  }
+
+  if(process.env.NODE_ENV === 'production') cookieOptions.secure = true
+res.cookie('jwt', token, cookieOptions)
 
   res.status(statusCode).json({
     status: 'success',

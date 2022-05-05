@@ -21,24 +21,26 @@ exports.getAllUsers = catchAsync(async (req, res) => {
     },
   });
 });
-exports.deleteUser = (req, res) => {
-  res.status(500).json({
-    status: 'err',
-    message: 'this route not yet defined',
-  });
-};
-exports.updateUser = (req, res) => {
-  res.status(500).json({
-    status: 'err',
-    message: 'this route not yet defined',
-  });
-};
+// exports.deleteUser = (req, res) => {
+//   res.status(500).json({
+//     status: 'err',
+//     message: 'this route not yet defined',
+//   });
+// };
+// exports.updateUser = (req, res) => {
+//   res.status(500).json({
+//     status: 'err',
+//     message: 'this route not yet defined',
+//   });
+// };
 exports.createUser = (req, res) => {
   res.status(500).json({
     status: 'err',
     message: 'this route not yet defined',
   });
 };
+
+
 
 exports.updateMe = catchAsync(async (req, res, next) => {
   //  1) create eror if user POst password data is not
@@ -57,6 +59,15 @@ exports.updateMe = catchAsync(async (req, res, next) => {
 
   res.status(200).json({ status: 'success', data: { user: updatedUser } });
 });
+
+exports.deleteMe = catchAsync(async(req,res,next)=> {
+  await User.findByIdAndUpdate(req.user.id, {active: false})
+
+res.status(204).json({ //204 это удалено успешно
+  status: 'success',
+  data: null
+})
+})
 
 exports.getUser = (req, res) => {
   res.status(500).json({
