@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
 const validator = require('validator');
+// const User =require('./userModel')
 
 const tourSchema = new mongoose.Schema(
   {
@@ -101,6 +102,10 @@ const tourSchema = new mongoose.Schema(
         day: Number,
       },
     ],
+    guides: [
+      {type: mongoose.Schema.ObjectId,
+      ref:'User'}
+    ]
   },
   {
     toJSON: { virtuals: true },
@@ -119,6 +124,17 @@ tourSchema.pre('save', function (next) {
   next();
 });
 
+
+
+
+//----------------------------------------------------
+//это как мы встраивали по ID агентов прямо в туры
+// tourSchema.pre('save', async function(next){
+// const guidesPromises = this.guieds.map(async id => await User.findById(id))
+// this.guides = await Promise.all(guidesPromises) //выше мы получили дохрена promise и теперь ждём их все и когда получим назначим на guides и пойдём дальше
+//   next()
+// })
+//----------------------------------------------------
 // tourSchema.pre('save', function(next){
 //   next()
 // })
@@ -138,6 +154,16 @@ tourSchema.pre(/^find/, function (next) {
 //   this.find({secretTour: {$ne: true}})
 //   next()
 // })
+
+tourSchema.pre('/^find/', function(next){
+  //this. всегда указывает на текущий запрос
+  this.populate({//populate значит что надо взять рефы которые находятся в этом объекте и заменить их на данные. 
+    path: 'guides',
+    select: '-__v -passwordChangeAt' //вот так фильтруем те строки которые не хотим показывать.
+  });
+  next()
+})
+
 tourSchema.post(/^find/, function (docs, next) {
   console.log(`query took ${Date.now() - this.start} milliseconds`);
 
