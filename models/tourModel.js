@@ -102,10 +102,7 @@ const tourSchema = new mongoose.Schema(
         day: Number,
       },
     ],
-    guides: [
-      {type: mongoose.Schema.ObjectId,
-      ref:'User'}
-    ]
+    guides: [{ type: mongoose.Schema.ObjectId, ref: 'User' }],
   },
   {
     toJSON: { virtuals: true },
@@ -123,9 +120,6 @@ tourSchema.pre('save', function (next) {
   this.slug = slugify(this.name, { lower: true });
   next();
 });
-
-
-
 
 //----------------------------------------------------
 //это как мы встраивали по ID агентов прямо в туры
@@ -155,14 +149,15 @@ tourSchema.pre(/^find/, function (next) {
 //   next()
 // })
 
-tourSchema.pre('/^find/', function(next){
+tourSchema.pre(/^find/, function (next) {
   //this. всегда указывает на текущий запрос
-  this.populate({//populate значит что надо взять рефы которые находятся в этом объекте и заменить их на данные. 
+  this.populate({
+    //populate значит что надо взять рефы которые находятся в этом объекте и заменить их на данные.
     path: 'guides',
-    select: '-__v -passwordChangeAt' //вот так фильтруем те строки которые не хотим показывать.
+    select: '-__v -passwordChangeAt', //вот так фильтруем те строки которые не хотим показывать.
   });
-  next()
-})
+  next();
+});
 
 tourSchema.post(/^find/, function (docs, next) {
   console.log(`query took ${Date.now() - this.start} milliseconds`);
