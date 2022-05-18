@@ -115,6 +115,14 @@ tourSchema.virtual('durationWeeks').get(function () {
   return this.duration / 7;
 });
 
+// virtual populate
+tourSchema.virtual('reviews', {
+  // эта штука будет искать в базе все review которые содержат этот тур и будет добавлять их сюда
+  ref: 'Review',
+  foreignField: 'tour', // это поле в другой модели по которому мы будем искать,
+  localField: '_id', //это поле прописано в поле в другой модели.
+});
+
 //DOCUMENT MIDDLEWARE: runs before .save() and create(). не работает на insertMany()
 tourSchema.pre('save', function (next) {
   this.slug = slugify(this.name, { lower: true });
