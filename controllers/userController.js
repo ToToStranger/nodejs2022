@@ -1,6 +1,7 @@
 const User = require('./../models/userModel');
 const catchAsync = require('./../utils/catchAsync');
 const AppError = require('./../utils/appError');
+const factory = require('./handlerFactory');
 
 const filterObj = (obj, ...allowedFields) => {
   const newObj = {};
@@ -27,20 +28,6 @@ exports.getAllUsers = catchAsync(async (req, res) => {
 //     message: 'this route not yet defined',
 //   });
 // };
-// exports.updateUser = (req, res) => {
-//   res.status(500).json({
-//     status: 'err',
-//     message: 'this route not yet defined',
-//   });
-// };
-exports.createUser = (req, res) => {
-  res.status(500).json({
-    status: 'err',
-    message: 'this route not yet defined',
-  });
-};
-
-
 
 exports.updateMe = catchAsync(async (req, res, next) => {
   //  1) create eror if user POst password data is not
@@ -60,14 +47,15 @@ exports.updateMe = catchAsync(async (req, res, next) => {
   res.status(200).json({ status: 'success', data: { user: updatedUser } });
 });
 
-exports.deleteMe = catchAsync(async(req,res,next)=> {
-  await User.findByIdAndUpdate(req.user.id, {active: false})
+exports.deleteMe = catchAsync(async (req, res, next) => {
+  await User.findByIdAndUpdate(req.user.id, { active: false });
 
-res.status(204).json({ //204 это удалено успешно
-  status: 'success',
-  data: null
-})
-})
+  res.status(204).json({
+    //204 это удалено успешно
+    status: 'success',
+    data: null,
+  });
+});
 
 exports.getUser = (req, res) => {
   res.status(500).json({
@@ -75,3 +63,7 @@ exports.getUser = (req, res) => {
     message: 'this route not yet defined',
   });
 };
+
+// Do not update password like this!
+exports.deleteUser = factory.deleteOne(User);
+exports.updateUser = factory.updateOne(User);
