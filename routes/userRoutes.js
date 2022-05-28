@@ -10,17 +10,23 @@ router.post('/login', authController.login);
 router.post('/forgotPassword', authController.forgotPassword);
 router.patch('/resetPassword/:token', authController.resetPassword);
 
+router.use(authController.protect) //вот эта строка включит защиту для всех маршрутов ниже
+
+router.get('/me',  userController.getMe, userController.getUser)
+
 router.patch(
   '/updateMyPassword',
-  authController.protect,
+  
   authController.updatePassword
 );
-router.patch('/updateMe', authController.protect, userController.updateMe);
-router.delete('/deleteMe', authController.protect, userController.deleteMe);
+router.patch('/updateMe',  userController.updateMe);
+router.delete('/deleteMe',  userController.deleteMe);
+
+router.use(authController.restrictTo('admin'))
 
 //second route
-router.route('/').get(userController.getAllUsers);
-// .post(userController.createUser);
+router.route('/').get(userController.getAllUsers)
+.post(userController.createUser);
 router
   .route('/:id')
   .get(userController.getUser)

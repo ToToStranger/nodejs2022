@@ -24,17 +24,17 @@ router
   .get(tourController.aliasTopTours, tourController.getAllTours);
 
 router.route('/tour-stats').get(tourController.getTourStats);
-router.route('/monthly-plan/:year').get(tourController.getMonthlyPlan);
+router.route('/monthly-plan/:year').get(authController.protect, authController.restrictTo('admin', 'lead-guide', 'guide'), tourController.getMonthlyPlan);
 
 router
   .route('/')
-  .get(authController.protect, tourController.getAllTours) //protect защищает. Если будет ошибка, следующая функция не сработает
-  .post(tourController.createTour); // первая функция это middleware, вторая сам маршрут
+  .get( tourController.getAllTours) //protect защищает. Если будет ошибка, следующая функция не сработает
+  .post(authController.protect, authController.restrictTo('admin', 'lead-guide'), tourController.createTour); // первая функция это middleware, вторая сам маршрут
 
 router
   .route('/:id')
   .get(tourController.getTour)
-  .patch(tourController.updateTour)
+  .patch(authController.protect, authController.restrictTo('admin', 'lead-guide'), tourController.updateTour)
   .delete(
     authController.protect,
     authController.restrictTo('admin', 'lead-guide'),
