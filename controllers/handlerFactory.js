@@ -50,17 +50,18 @@ exports.createOne = (Model) =>
     });
   });
 
-  exports.getOne = (Model, popOptions) => catchAsync(async (req, res, next) => {
-  let query=Model.findById(req.params.id)
-  if(popOptions) query=query.populate(popOptions)
+exports.getOne = (Model, popOptions) =>
+  catchAsync(async (req, res, next) => {
+    let query = Model.findById(req.params.id);
+    if (popOptions) query = query.populate(popOptions);
 
-      const doc = await query
+    const doc = await query;
     //тоже самое что doc.findOne({_id: req.params.id})
-  
+
     if (!doc) {
       return next(new AppError('no doc found with that ID', 404));
     }
-  
+
     res.status(200).json({
       status: 'success',
       data: {
@@ -69,24 +70,26 @@ exports.createOne = (Model) =>
     });
   });
 
-  exports.getAll = (Model) => catchAsync(async (req, res, next) => {
+exports.getAll = (Model) =>
+  catchAsync(async (req, res, next) => {
     //BUILD QUERY
     // to allow for nested get reviews on Tour
     let filter;
-  if (req.params.tourId) filter = { tour: req.params.tourId };
+    if (req.params.tourId) filter = { tour: req.params.tourId };
 
     //EXECUTE QUERY
-  
+
     const features = new APIFeatures(Model.find(filter), req.query)
       .filter()
       .sort()
       .limitFields()
       .paginate();
-  
-    const doc = await features.query;
-  
+
+    const doc = await features.query; //explain метод используется для статистики
+    // const doc = await features.query.explain(); //explain метод используется для статистики
+
     // const doc = await Tour.find().where('duration').equals(5).where('difficulty').equals('easy')
-  
+
     res.status(200).json({
       status: 'success',
       results: doc.length,

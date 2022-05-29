@@ -110,6 +110,10 @@ const tourSchema = new mongoose.Schema(
   }
 );
 
+// tourSchema.index({ price: 1 }); //вот так включаем индескирование 1 - вверх, -1 вниз
+tourSchema.index({ price: 1, ratingAverage: -1 });
+tourSchema.index({ slug: 1 });
+
 tourSchema.virtual('durationWeeks').get(function () {
   //function использовал для того чтобы использовать this.
   return this.duration / 7;
