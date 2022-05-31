@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Tour = require('./tourModel');
 
 const reviewSchema = new mongoose.Schema(
   {
@@ -47,6 +48,47 @@ reviewSchema.pre(/^find/, function (next) {
     select: 'name photo',
   });
   next();
+});
+
+reviewSchema.statics.calcAverageRatings = async function (tourId) {
+  const stats = await this.aggregate([
+    { $match: { tour: tourId } },
+    {
+      $group: {
+        _id: '$tour',
+        nRating: { $sum: 1 },
+        avgRating: { $avg: 'rating' },
+      },
+    },
+  ]);
+  console.log(stats);
+  if (stats.lenght > 0) {
+    await Tour.findbyIdAndUpdate(tourId, {
+      ratingQuantity: stats[0].nRating,
+      ratingAverage: stats[0].avgRating,
+    });
+  } else {
+    await Tour.findbyIdAndUpdate(tourId, {
+      ratingQuantity: 0,
+      ratingAverage: 4.5,
+    });
+  }
+};
+
+reviewSchema.pre(/^findOneAnd/, async function (next) {
+  this.r = await this.findeOne();
+  next();
+});
+
+reviewSchema.post(/^findOneAnd/, async function () {
+  // this.r = await this.findeOne(); does not work here, query already been executed
+  // в этот момент мы до сих пор имеем доступ к this
+  await this.r.constructor.calcAverageRatings(this.r.tour);
+});
+
+reviewSchema.post('save', function () {
+  // /this points to current review
+  this.constructor.calcAverageRatings(this.tour); // делаем так потому что Review еще вообще не создан и надо использовать сам конструктор
 });
 
 const Review = mongoose.model('Review', reviewSchema);
