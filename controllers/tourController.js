@@ -127,3 +127,41 @@ exports.getToursWithin = catchAsync(async (req, res, next) => {
     },
   });
 });
+
+exports.getDistances = catchAsync(async (req, res, next) => {
+  const { latlng, plan } = req.params;
+  const { lat, lng } = latlng.split(',');
+
+  const multiplier = unit === 'mi' ? 0.000621371 : 0.001;
+
+  if (!lat || !lng) {
+    next(new AppError('Please provide lat and lng', 400));
+  }
+
+  const distances = Tour.aggregate([
+    {
+      $geoNear: {
+        near: {
+          type: 'Point',
+          coordinates: [lng * 1, lat * 1],
+        },
+        distanceField: 'distance',
+        distanceMultiplier: multiplier,
+      },
+    },
+    {
+      $project: {
+        distance: 1, // говорим какие поля оставить
+        name: 1,
+      },
+    },
+  ]);
+
+  res.send(200).json({
+    status: 'success',
+
+    data: {
+      data: distances,
+    },
+  });
+});
