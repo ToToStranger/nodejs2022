@@ -37,6 +37,7 @@ const tourSchema = new mongoose.Schema(
       default: 4.5,
       min: [1, `rating must be above 1.0`],
       max: [5, `rating must be below 5.0`],
+      set: (val) => Math.round(val * 10) / 10, //бдует запускаться каждый раз когда получит новое значение. использует функцию
     },
     ratingQuantity: { type: Number, default: 0 },
     price: {
@@ -113,6 +114,7 @@ const tourSchema = new mongoose.Schema(
 // tourSchema.index({ price: 1 }); //вот так включаем индескирование 1 - вверх, -1 вниз
 tourSchema.index({ price: 1, ratingAverage: -1 });
 tourSchema.index({ slug: 1 });
+tourSchema.index({ startLocation: '2dsphere' }); //это потому что используем настоящую сферу земли
 
 tourSchema.virtual('durationWeeks').get(function () {
   //function использовал для того чтобы использовать this.

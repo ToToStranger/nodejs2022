@@ -25,9 +25,9 @@ exports.aliasTopTours = (req, res, next) => {
   next();
 };
 
-exports.getAllTours = factory.getAll(Tour)
+exports.getAllTours = factory.getAll(Tour);
 
-exports.getTour = factory.getOne(Tour,{path: 'reviews'})
+exports.getTour = factory.getOne(Tour, { path: 'reviews' });
 exports.createTour = factory.createOne(Tour);
 exports.updateTour = factory.updateOne(Tour);
 exports.deleteTour = factory.deleteOne(Tour);
@@ -105,3 +105,25 @@ exports.getMonthlyPlan = async (req, res, next) => {
     data: plan,
   });
 };
+
+exports.getToursWithin = catchAsync(async (req, res, next) => {
+  const { distance, latlng, plan } = req.params;
+  const { lat, lng } = latlng.split(',');
+  const raduis = unit === 'mi' ? distance / 3963.2 : distance / 6378.1; //радианты считаются делением на радиус земли(6378.1)
+
+  if (!lat || !lng) {
+    next(new AppError('Please provide lat and lng', 400));
+  }
+
+  const tours = await Tour.find({
+    startLocation: { $geoWithin: { $centerSphere: [[lng, lat], radius] } },
+  });
+
+  res.send(200).json({
+    status: 'success',
+    results: tour.length,
+    data: {
+      data: tours,
+    },
+  });
+});
