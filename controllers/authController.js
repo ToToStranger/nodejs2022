@@ -11,18 +11,20 @@ const signToken = (id) => {
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
 };
- 
-const createSendToken = (user, statusCode, res) =>{
+
+const createSendToken = (user, statusCode, res) => {
   const token = signToken(user._id);
-user.password = undefined //это уберет пароль из отправки нам так как запись в БД происходит раньше
+  user.password = undefined; //это уберет пароль из отправки нам так как запись в БД происходит раньше
   const cookieOptions = {
-    expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000),
+    expires: new Date(
+      Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
+    ),
 
-    httpOnly: true // так нельзя вообще никак модифицировать куки Очень важно!
-  }
+    httpOnly: true, // так нельзя вообще никак модифицировать куки Очень важно!
+  };
 
-  if(process.env.NODE_ENV === 'production') cookieOptions.secure = true
-res.cookie('jwt', token, cookieOptions)
+  if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
+  res.cookie('jwt', token, cookieOptions);
 
   res.status(statusCode).json({
     status: 'success',
@@ -31,7 +33,7 @@ res.cookie('jwt', token, cookieOptions)
       user: user,
     },
   });
-}
+};
 
 exports.signup = catchAsync(async (req, res, next) => {
   const newUser = await User.create({
@@ -41,7 +43,7 @@ exports.signup = catchAsync(async (req, res, next) => {
     passwordConfirm: req.body.passwordConfirm,
   });
 
-createSendToken(newUser, 201, res)
+  createSendToken(newUser, 201, res);
 
   // const token = signToken(newUser._id);
 
@@ -69,8 +71,7 @@ exports.login = catchAsync(async (req, res, next) => {
     return next(new AppError('incorrect email or password', 401));
   }
 
-  createSendToken(user, 200, res)
-
+  createSendToken(user, 200, res);
 });
 
 exports.protect = catchAsync(async (req, res, next) => {
@@ -81,8 +82,9 @@ exports.protect = catchAsync(async (req, res, next) => {
     req.headers.authorization.startsWith('Bearer')
   ) {
     token = req.headers.authorization.split(' ')[1];
+  } else if (req.cookies.jwt) {
+    token = req.cookies.jwt;
   }
-
   if (!token) {
     return next(new AppError('please login', 401));
   }
@@ -177,27 +179,28 @@ exports.resetPassword = async (req, res, next) => {
   //3) update changedPasswordAt property of
 
   //4) Log the use in. Send JWT
-  createSendToken(user, 200, res)
+  createSendToken(user, 200, res);
 };
 
-
-exports.updatePassword = catchAsync( async(req,res,next) => {
+exports.updatePassword = catchAsync(async (req, res, next) => {
   // 1) get user from collection
-// const {email, password} = req.body
+  // const {email, password} = req.body
 
   const user = User.findById(req.user.id).select('+password');
   // 2) check if posted pass is correct
 
-if(!user || !(await user.correctPassword(req.body.passwordCurrent, user.password))){
-  return next(new AppError('You entered wrong password', 401))
-}
+  if (
+    !user ||
+    !(await user.correctPassword(req.body.passwordCurrent, user.password))
+  ) {
+    return next(new AppError('You entered wrong password', 401));
+  }
   // 3) if correct, update password and send JWT
 
-user.password = password
-user.passwordConfirm = password
-await user.save()
-//user.findbyandUpdate не будет производить валидвацию паролей, пролетит мимо шифрования и 
+  user.password = password;
+  user.passwordConfirm = password;
+  await user.save();
+  //user.findbyandUpdate не будет производить валидвацию паролей, пролетит мимо шифрования и
 
-createSendToken(user, 200, res)
-
-})
+  createSendToken(user, 200, res);
+});
