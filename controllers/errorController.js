@@ -1,74 +1,93 @@
-const AppError = require('./../utils/appError')
+const AppError = require('./../utils/appError');
 
+const handleCastErrorDB = (err) => {
+  const message = `Invalid ${err.path}: ${err.value}`;
 
-const handleCastErrorDB = err => {
-  const message = `Invalid ${err.path}: ${err.value}`
+  return new AppError(message, 400);
+};
+const handleDuplicateFieldsBD = (err) => {
+  const value = err.errmsg.match(/(["'])(?:(?=(\\?))\2.)*?\1/)[0];
 
-return new AppError(message, 400)
-}
-const handleDuplicateFieldsBD = err => {
-const value = err.errmsg.match(/(["'])(?:(?=(\\?))\2.)*?\1/)[0]
+  const message = `duplicate field value: ${value}. please use another value`;
+  return new AppError(message, 400);
+};
+const handleValidationErrorDB = (err) => {
+  const errors = Object.values(err.errors).map((el = el.message));
+  const message = `invalid input data. ${errors.join('. ')}`;
+  return new AppError(message, 400);
+};
 
-  const message = `duplicate field value: ${value}. please use another value`
-return new AppError(message, 400)
+const handleJWTError = () =>
+  new AppError('Invalid token. Please log in again!');
 
-}
-const handleValidationErrorDB = err => {
-  const errors = Object.values(err.errors).map(el = el.message)
-  const message = `invalid input data. ${errors.join('. ')}`
-return new AppError(message, 400)
-}
+const handleJWTExpiredError = () =>
+  new AppError(' your token has expired, please login', 401);
 
-const handleJWTError = () => new AppError('Invalid token. Please log in again!')
-
-const handleJWTExpiredError = () => new AppError(' your token has expired, please login', 401)
-
-const sendErrorDev = (err, res) => {
-  res.status(err.statusCode).json({
-    status: err.status,
-    error: err,
-    message: err.message,
-    stack: err.stack
-  });
-}
-
-const sendErrorProd = (err, res)=>{
-  // operational, trusted error: send message client
-  if (err.isOperational){
-    res.status(err.statusCode).json({
+const sendErrorDev = (err, req, res) => {
+  //API
+  if (req.operational.startsWith('/api')) {
+    return res.status(err.statusCode).json({
       status: err.status,
-         message: err.message,
+      error: err,
+      message: err.message,
+      stack: err.stack,
+    });
+  }
+  //RENDERED WEBSITE
+  return res.status(err.statusCode).render('error', {
+    title: 'something went wrong',
+    msg: err.message,
+  });
+};
+
+const sendErrorProd = (err, req, res) => {
+  if (req.operational.startsWith('/api')) {
+    if (err.isOperational) {
+      // operational, trusted error: send message client
+      return res.status(err.statusCode).json({
+        status: err.status,
+        message: err.message,
       });
-    }else {
-      // programming or other unknown error. Dont leaK ERROR TO Client
+    }
+    // programming or other unknown error. Dont leaK ERROR TO Client
     //1) log error to console
     console.log('ERROR !!', err);
-   // send error to client
-    res.status(500).json({
+    // send error to client
+    return res.status(500).json({
       status: 'error',
-      message: 'something went very wrong'
-      
-})
-    }
-
-}
-
+      message: 'something went very wrong',
+    });
+  }
+  //B) rendered website
+  if (err.isOperational) {
+    // operational, trusted error: send message client
+    return res.status(err.statusCode).render('error', {
+      title: 'something went wrong',
+      msg: err.message,
+    });
+  }
+  // programming or other unknown error. Dont leaK ERROR TO Client
+  //1) log error to console
+  return res.status(err.statusCode).render('error', {
+    title: 'something went wrong',
+    msg: 'please try again later',
+  });
+};
 
 module.exports = (err, req, res, next) => {
-    err.statusCode = err.statusCode || 500;
-    err.status = err.status || 'error';
-  if(process.env.NODE_ENV === 'development'){
-sendErrorDev(err,res)
-  }else if (process.env.NODE_ENV === 'production'){
-    let error = {...err}
-//теперь те ошибки которые сделали сами пользователи и которые что то значат
-if(error.name === 'CastError') error = handleCastErrorDB(error)
-if(error.code === 11000) error =handleDuplicateFieldsBD(error)   
-if(error.name === 'JsonWebTokenError') error = handleJWTError()
-if(error.name === 'ValidationError') error = handleValidationErrorDB(error)
-if(error.name ===  'TokenExpiredError') error = handleJWTExpiredError()
-sendErrorProd(error, res)
+  err.statusCode = err.statusCode || 500;
+  err.status = err.status || 'error';
+  if (process.env.NODE_ENV === 'development') {
+    sendErrorDev(err, req, res);
+  } else if (process.env.NODE_ENV === 'production') {
+    let error = { ...err };
+    //теперь те ошибки которые сделали сами пользователи и которые что то значат
+    if (error.name === 'CastError') error = handleCastErrorDB(error);
+    if (error.code === 11000) error = handleDuplicateFieldsBD(error);
+    if (error.name === 'JsonWebTokenError') error = handleJWTError();
+    if (error.name === 'ValidationError')
+      error = handleValidationErrorDB(error);
+    if (error.name === 'TokenExpiredError') error = handleJWTExpiredError();
+    sendErrorProd(error, req, res);
   }
-
-   
-  }
+};
