@@ -45,7 +45,9 @@ app.use('/api', limiter);
 //без этой функции не будет доступа к res.body!!!!!! это важно
 //body parser
 app.use(express.json({ limit: '10kb' })); //limit: 10kb ограничевает body которое может принять
+app.use(express.urlencoded({ extended: true, limit: '10kb' })); //limit: 10kbтак можно ловить данные которые закодированы в сам url
 app.use(cookieParser());
+
 //data sanitization against noSQL query injection
 //просто удалит из кода все $ и точки, без них не работает запрос
 app.use(mongoSanitizer());

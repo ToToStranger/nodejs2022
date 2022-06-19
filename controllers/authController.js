@@ -114,6 +114,7 @@ exports.protect = catchAsync(async (req, res, next) => {
   //GRANT ACCESS TO PROTECTED ROUTE!
   // это когда все проверки прошли
   req.user = currentUser;
+  res.locals.user = currentUser; // res.locals будет доступен в самом PUG но мне с реактом это не нужно
   next();
 });
 // Only for rendered pages, no errors!
