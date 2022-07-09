@@ -41,6 +41,8 @@ router
   .post(
     authController.protect,
     authController.restrictTo('admin', 'lead-guide'),
+    tourController.uploadTourImages,
+    tourController.resizeTourImages,
     tourController.createTour
   ); // первая функция это middleware, вторая сам маршрут
 

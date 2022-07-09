@@ -1,4 +1,6 @@
 const Tour = require('./../models/tourModel');
+const sharp = require('sharp'); //можно делать много всего, но сейчас используем для resize картинок
+const multer = require('multer'); //используется для заливки файлов
 
 const catchAsync = require('./../utils/catchAsync');
 const AppError = require('./../utils/appError');
@@ -165,3 +167,61 @@ exports.getDistances = catchAsync(async (req, res, next) => {
     },
   });
 });
+
+
+const multerStorage = multer.memoryStorage();
+const multerFilter = (req, file, cb) => {
+  //filter нужен для того чтобы определять тип файла и если это не картинка то кидать ошибку
+  // можно и CSV
+  if (file.mimetype.startsWith('image')) {
+    cb(null, true);
+  } else {
+    cb(new AppError('not an image file', 400), false);
+  }
+};
+
+const upload = multer({ storage: multerStorage, fileFilter: multerFilter });
+
+
+
+expots.uploadTourImages = upload.fields([
+  {name:'imageCover', maxCount:1},
+  {name: 'images', maxCount:3}
+])
+
+// upload.single('image') это когда одно фото
+//upload.array('images',5) это когда много файлов
+
+exports.resizeTourImages = catchAsync(async (req,res,next) => {
+  console.log(req.files)
+  // 1) Cover image
+  req.body.imageCover = `tour-${req.params.id}-${Date.now()}-cover.jpeg`
+if (!req.files.imageCover|| !req.files.images) return next()
+
+await sharp(req.files.ImageCover[0].buffer)
+  .resize(2000, 1333)
+  .toFormat('jpeg')
+  .jpeg({ quality: 90 })
+  .toFile(`public/img/tours/${req.body.imageCover}`);
+// 2) Images
+req.body.images =[]
+// req.files.images.foreach( async (file, i) => { //он взял откуда то индекс и добавил его сюда. просто так
+  await Promise.all(req.files.images.map( async (file, i) => { //он взял откуда то индекс и добавил его сюда. просто так
+  const filename = `tour-${req.params.id}-${Date.now()}-${i +1}.jpeg`
+
+  await sharp(file.buffer)
+  .resize(2000, 1333)
+  .toFormat('jpeg')
+  .jpeg({ quality: 90 })
+  .toFile(`public/img/tours/${filename}`);
+req.body.images.push(filename)
+//сначала он хотел использовать foreach но async/await тогда будет внутри этой функции и код будет выполняться без ожидания.
+// поэтому он перешел на .map метод и на нем сможет выполнить promise ALL потому что функция будет отправлять promise
+
+
+}))
+
+
+next()
+
+})
