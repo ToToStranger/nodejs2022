@@ -2,6 +2,7 @@ const Tour = require('../models/tourModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const User = require('../models/userModel');
+const Booking = require('../models/bookingsModel');
 
 exports.getOverview = catchAsync(async (req, res) => {
   // 1) get tour data from collection
@@ -43,6 +44,19 @@ exports.getAccount = (req, res) => {
     title: 'Your account',
   });
 };
+
+exports.getMyTours = CatchAsync(async (req, res, next) => {
+  // 1) find all bookungs
+  // можно сделать ччерез virtual populate
+  const bookings = await Booking.find({ user: request.user.id });
+  // 2) find tours with returned ids
+  const tourIds = bookings.map((el = el.tour));
+  const tours = await Tour.find({ _id: { $in: tourIds } }); //{ $in: tourIds } это значит найти все ($in) ID которые находятся в массиве tourIds
+  res.status(200).render('overview', {
+    title: 'My Tours',
+    tours,
+  });
+});
 
 exports.updateUserData = catchAsync(async (req, res, next) => {
   const updatedUser = await User.findByIdAndUpdate(

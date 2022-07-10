@@ -12,19 +12,18 @@ const signToken = (id) => {
   });
 };
 
-const createSendToken = (user, statusCode, res) => {
+const createSendToken = (user, statusCode, req, res) => {
   const token = signToken(user._id);
   user.password = undefined; //это уберет пароль из отправки нам так как запись в БД происходит раньше
-  const cookieOptions = {
+
+  res.cookie('jwt', token, {
     expires: new Date(
       Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
     ),
 
     httpOnly: true, // так нельзя вообще никак модифицировать куки Очень важно!
-  };
-
-  if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
-  res.cookie('jwt', token, cookieOptions);
+    secure: req.sercure || req.headers('x-forwarded-proto') === 'https',
+  });
 
   res.status(statusCode).json({
     status: 'success',
@@ -42,9 +41,9 @@ exports.signup = catchAsync(async (req, res, next) => {
     password: req.body.password,
     passwordConfirm: req.body.passwordConfirm,
   });
-  const url = `${req.protocol}://${req.get('host')}/me `
-    await new Email(newUser, ul).sendWelcome()
-  createSendToken(newUser, 201, res);
+  const url = `${req.protocol}://${req.get('host')}/me `;
+  await new Email(newUser, ul).sendWelcome();
+  createSendToken(newUser, 201, req, res);
 
   // const token = signToken(newUser._id);
 
@@ -72,7 +71,7 @@ exports.login = catchAsync(async (req, res, next) => {
     return next(new AppError('incorrect email or password', 401));
   }
 
-  createSendToken(user, 200, res);
+  createSendToken(user, 200, req, res);
 });
 
 exports.logout = (req, res) => {
@@ -178,7 +177,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
 
   const message = `forgot your passwrd? submit a patch with new pass and confirm to: ${resetURL}.\nIf you didnt, please ignore this email!`;
   try {
-    await new Email(user, resetURL).sendPasswordReset()
+    await new Email(user, resetURL).sendPasswordReset();
     res.status(200).json({ status: 'success', essage: 'token sent to email' });
   } catch (err) {
     //если отправить не получилось, просто убираем токен и всё подчищаем.
@@ -216,7 +215,7 @@ exports.resetPassword = async (req, res, next) => {
   //3) update changedPasswordAt property of
 
   //4) Log the use in. Send JWT
-  createSendToken(user, 200, res);
+  createSendToken(user, 200, req, res);
 };
 
 exports.updatePassword = catchAsync(async (req, res, next) => {
@@ -239,5 +238,5 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
   await user.save();
   //user.findbyandUpdate не будет производить валидвацию паролей, пролетит мимо шифрования и
 
-  createSendToken(user, 200, res);
+  createSendToken(user, 200, req, res);
 });

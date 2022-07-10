@@ -9,6 +9,7 @@ const mongoSanitizer = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 const hpp = require('hpp');
 const cookieParser = require('cookie-parser');
+const cors = require('cors');
 
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
@@ -18,10 +19,21 @@ const viewRouter = require('./routes/viewRoutes');
 
 const app = express();
 
+app.enable('trust proxy'); // вот так приложение будет доверять proxy
+
 app.set('view engine', 'pug'); //это для рендеринга страниц из шаблонов
 app.set('views', path.join(__dirname, 'views'));
 
 // 1) GLOBAL MIDLLEWAIRS
+// implemet CORS глобально!!!! просто раскоменьт внизу. Мы пробуем включить корс на одном маршруте\
+// app.use(cors()) // включит доступ отовсюду
+// app.use(cors({
+// origin: 'https://www.mydomain.com'
+// }))
+
+// отвечаем на CORS сложные запросы
+app.options('*', cors());
+// app.opions('/api/v1/tours/:id', cors()) так контроллируем что разрешен только один маршрут
 
 app.use(express.static(path.join(__dirname, 'public')));
 //helmet задает загаловки безопасности, поэтому его надо ставить в самый верх и всегда.
@@ -100,7 +112,7 @@ app.use((req, res, next) => {
 // 3) ROUTES
 //mounting the router :)
 app.use('/', viewRouter);
-app.use('/api/v1/tours', tourRouter);
+app.use('/api/v1/tours', cors(), tourRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/reviews', reviewRouter);
 app.use('/api/v1/booking', bookingRouter);

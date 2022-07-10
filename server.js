@@ -1,10 +1,10 @@
 const dotenv = require('dotenv');
 
-process.on('uncaughtException', err => {
+process.on('uncaughtException', (err) => {
   console.log(`UNCAUGHT REJECTION! Shutting down`);
   console.log(err.name, err.message);
- console.log(err)
-})
+  console.log(err);
+});
 
 const mongoose = require('mongoose');
 
@@ -36,13 +36,18 @@ const server = app.listen(port, () => {
 
 // чтобы выключать сервер gracefully надо сначала сохранить его в переменную.
 //unhandlede rejection handlers
-process.on('unhandledRejection', err =>{
+process.on('unhandledRejection', (err) => {
   console.log(`UNHANDLED REJECTION! Shutting down`);
   console.log(err.name, err.message);
-  server.close(()=>{
+  server.close(() => {
     process.exit(1); // прекратить приложение
-  })
-  
-}
-)
+  });
+});
 
+// эта функция бдуте выключать сервер заканчивая все транзакции когда получит сигнал SIGTERM
+process.on('SIGTERM', () => {
+  console.log(`SIGTERM received, shutting down  gracefully`);
+  server.close(() => {
+    console.log(' KILLED Process terminated');
+  });
+});
